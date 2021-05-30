@@ -784,6 +784,8 @@ contract FUDOFF is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcludedFromFee;
 
     mapping (address => bool) private _isExcluded;
+    mapping (address => bool) private _isExcludedFromTxLimit;
+
     address[] private _excluded;
     uint256 private constant MAX = ~uint256(0);
     
@@ -957,11 +959,11 @@ contract FUDOFF is Context, IERC20, Ownable {
         emit Transfer(sender, recipient, tTransferAmount);
     }
     
-    function excludeFromFee(address account) public onlyOwner {
+    function excludeFromFee(address account) public onlyOwner() {
         _isExcludedFromFee[account] = true;
     }
     
-    function includeInFee(address account) public onlyOwner {
+    function includeInFee(address account) public onlyOwner() {
         _isExcludedFromFee[account] = false;
     }
     
@@ -979,9 +981,13 @@ contract FUDOFF is Context, IERC20, Ownable {
         );
     }
 
-    function setSwapAndLiquifyEnabled(bool _enabled) public onlyOwner {
+    function setSwapAndLiquifyEnabled(bool _enabled) public onlyOwner() {
         swapAndLiquifyEnabled = _enabled;
         emit SwapAndLiquifyEnabledUpdated(_enabled);
+    }
+
+    function excludeFromTxLimit(address account) external onlyOwner() {    
+        _isExcludedFromTxLimit[account] = true;
     }
     
      //to recieve ETH from uniswapV2Router when swaping
@@ -1121,7 +1127,7 @@ contract FUDOFF is Context, IERC20, Ownable {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        if(from != owner() && to != owner())
+        if(from != owner() && to != owner() && _isExcludedFromTxLimit[from] != true)
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
         // is the token balance of this contract address over the min number of
